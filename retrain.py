@@ -4,6 +4,8 @@ import argparse
 import tensorflow as tf
 import tensorflow_hub as hub
 
+import hub_urls
+
 def prepare_dir_tree():
     
     if not tf.io.gfile.exists(FLAGS.bottleneck_dir):
@@ -17,6 +19,8 @@ def prepare_dir_tree():
 
 def main():
     prepare_dir_tree()
+
+    print('URL', hub_urls.get_hub_url(FLAGS.architecture))
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description = 'Transfer Learning Parameters')
