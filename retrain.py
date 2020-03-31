@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 
 import hub_urls
+import create_model
 
 def prepare_dir_tree():
     
@@ -21,6 +22,20 @@ def main():
     prepare_dir_tree()
 
     print('URL', hub_urls.get_hub_url(FLAGS.architecture))
+    
+    model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
+    '1_conv2d': {'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu'},
+    '2_maxpooling2d': {'pool_size': (2, 2)},
+    '3_conv2d': {'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    '4_maxpooling2d': {'pool_size': (2, 2)},
+    '5_conv2d': {'filters': 128, 'kernel_size': (3, 3), 'activation': 'relu'},
+    '6_flatten': {},
+    '7_dense': {'units': 64, 'activation': 'relu'},
+    '8_dense': {'units': 10, 'activation': 'softmax'},
+    })
+
+    print(model.get_summary().summary())
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description = 'Transfer Learning Parameters')
