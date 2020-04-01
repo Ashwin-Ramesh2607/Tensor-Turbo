@@ -1,6 +1,7 @@
 # Directories created while transfer learning
 logs/
 bottlenecks/
+tfhub_models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
