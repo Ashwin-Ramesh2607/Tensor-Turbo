@@ -1,3 +1,5 @@
+import tensorflow_hub as hub
+
 def get_hub_url(architecture):
 
     url_list = {
@@ -6,3 +8,8 @@ def get_hub_url(architecture):
     }
 
     return url_list[architecture]
+
+def get_hub_model(architecture):
+
+    hub_url = get_hub_url(architecture)
+    return hub.load(hub_url)

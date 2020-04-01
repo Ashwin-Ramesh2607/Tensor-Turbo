@@ -77,8 +77,8 @@ def prepare_dir_tree():
 def main():
     prepare_dir_tree()
     create_image_splits()
-'''
-    print('URL', hub_urls.get_hub_url(FLAGS.architecture))
+    
+    print('HUB SavedModel:', hub_urls.get_hub_model(FLAGS.architecture))
     
     model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
     '1_conv2d': {'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu'},
@@ -92,7 +92,6 @@ def main():
     })
 
     print(model.get_summary().summary())
-    '''
 
 
 def parse_arguments():
