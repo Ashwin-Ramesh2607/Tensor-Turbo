@@ -9,7 +9,7 @@ import tensorflow_hub as hub
 import hub_urls
 import create_model
 
-MAX_NUM_IMAGES_PER_CLASS = 999
+MAX_NUM_IMAGES_PER_CLASS = 2 ** 27 - 1
 
 def create_image_splits():
     if not tf.io.gfile.exists(FLAGS.image_dir):
@@ -42,7 +42,7 @@ def create_image_splits():
         for image_file in image_list:
             image_name = os.path.splitext(image_file)[0]
             hash_name = re.sub(r'_nohash_.*$', '', image_name)
-            hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(hash_name)).hexdigest()
+            hash_name_hashed = hashlib.sha512(tf.compat.as_bytes(hash_name)).hexdigest()
             percentage_hash = ((int(hash_name_hashed, 16) %
                                (MAX_NUM_IMAGES_PER_CLASS + 1)) *
                                (100.0 / MAX_NUM_IMAGES_PER_CLASS))
@@ -56,12 +56,12 @@ def create_image_splits():
 
         dataset_splits[os.path.basename(class_dir)] = {
             'directory': class_dir,
-            'train': len(training_images),
-            'validation': len(validation_images),
-            'test': len(testing_images)
+            'train': training_images,
+            'validation': validation_images,
+            'test': testing_images
         }
 
-    print(dataset_splits)
+    return dataset_splits
 
 def prepare_dir_tree():
     
