@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -45,14 +46,24 @@ def create_train_example(bottleneck_vector, class_label):
 	train_example = tf.train.Example(features = tf.train.Features(feature = feature))
 	return train_example
 
-def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor):
+def create_bottlenecks_tfrecord(image_dir, CLASS_LABEL_LIST, feature_extractor_model):
 
+    global CLASS_LABELS, feature_extractor
+    CLASS_LABELS = CLASS_LABEL_LIST
+    feature_extractor = feature_extractor_model
+
+    start = time.time()
     image_path_DS = tf.data.Dataset.list_files(image_dir + '/*/*', shuffle = True)
     bottleneck_DS = image_path_DS.map(create_bottlenecks_vectors, num_parallel_calls =  tf.data.experimental.AUTOTUNE)
+    end = time.time()
+    print('Time to create bottleneckes:', end - start)
 
-    record_file = 'images.tfrecords'
+    start = time.time()
+    record_file = 'bottlenecks/testing.tfrecords'
     with tf.io.TFRecordWriter(record_file) as writer:
         for bottleneck_vector, class_label in bottleneck_DS:
             train_example = create_train_example(bottleneck_vector, class_label)	
             writer.write(train_example.SerializeToString())
+    end = time.time()
+    print('Time to create tfrecord:', end - start)
 
