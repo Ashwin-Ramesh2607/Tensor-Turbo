@@ -11,6 +11,17 @@ import create_model
 
 MAX_NUM_IMAGES_PER_CLASS = 2 ** 27 - 1
 
+def prepare_dir_tree():
+    
+    if not tf.io.gfile.exists(FLAGS.bottleneck_dir):
+        tf.io.gfile.mkdir(FLAGS.bottleneck_dir)
+    elif not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture)):
+        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture))
+
+    if tf.io.gfile.exists(FLAGS.summaries_dir):
+        tf.io.gfile.rmtree(FLAGS.summaries_dir)
+    tf.io.gfile.mkdir(FLAGS.summaries_dir)
+
 def create_image_splits():
     if not tf.io.gfile.exists(FLAGS.image_dir):
         print(f'Image Dataset could not be found at: {FLAGS.image_dir}')
@@ -63,36 +74,40 @@ def create_image_splits():
 
     return dataset_splits
 
-def prepare_dir_tree():
+#def create_bottleneck_vectors(feature_extractor):
     
-    if not tf.io.gfile.exists(FLAGS.bottleneck_dir):
-        tf.io.gfile.mkdir(FLAGS.bottleneck_dir)
-    elif not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture)):
-        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture))
-
-    if tf.io.gfile.exists(FLAGS.summaries_dir):
-        tf.io.gfile.rmtree(FLAGS.summaries_dir)
-    tf.io.gfile.mkdir(FLAGS.summaries_dir)
-
 def main():
     prepare_dir_tree()
     create_image_splits()
     
-    print('HUB SavedModel:', hub_urls.get_hub_model(FLAGS.architecture))
-    
-    model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
-    '1_conv2d': {'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu'},
-    '2_maxpooling2d': {'pool_size': (2, 2)},
-    '3_conv2d': {'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    '4_maxpooling2d': {'pool_size': (2, 2)},
-    '5_conv2d': {'filters': 128, 'kernel_size': (3, 3), 'activation': 'relu'},
-    '6_flatten': {},
-    '7_dense': {'units': 64, 'activation': 'relu'},
-    '8_dense': {'units': 10, 'activation': 'softmax'},
-    })
+    feature_extractor =  hub_urls.get_hub_model(FLAGS.architecture)
+    module_layer = hub.KerasLayer('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4', trainable = True)
+    module_image_size = tuple(
+        module_layer._func.__call__
+        .concrete_functions[0].structured_input_signature[0][0].shape)
+
+    print(module_image_size)
+    '''
+    if FLAGS.custom_classifier:
+        model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
+            '1_conv2d': {'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu'},
+            '2_maxpooling2d': {'pool_size': (2, 2)},
+            '3_conv2d': {'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+            '4_maxpooling2d': {'pool_size': (2, 2)},
+            '5_conv2d': {'filters': 128, 'kernel_size': (3, 3), 'activation': 'relu'},
+            '6_flatten': {},
+            '7_dense': {'units': 64, 'activation': 'relu'},
+            '8_dense': {'units': 10, 'activation': 'softmax'},
+        })
+    else:
+        model = create_model.CustomModel(input_dim = (1280, ), num_classes = 10, classifier_head = {
+            '1_dense': {'units': 10, 'activation': 'softmax'}
+        })
 
     print(model.get_summary().summary())
 
+    #create_bottleneck_vectors(model)
+'''
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description = 'Transfer Learning Parameters')
@@ -105,6 +120,15 @@ def parse_arguments():
             Specify the architecture to use as a Feature Extractor.
             A classifier head will be added which uses the Feature Vector to classify images.
             The pre-trained feature extractor will be downloaded from TensorFlow Hub.'''
+    )
+
+    parser.add_argument(
+        '--custom_classifier',
+        action = 'store_true',
+        help = '''\
+            Include this flag if you want to specify a custom classifier head.
+            If this flag is not set, only a dense layer (with number of nodes = number of image classes)
+            as a default classifier on top of the tf-hub feature extractor model.''' 
     )
 
     parser.add_argument(
