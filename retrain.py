@@ -9,6 +9,7 @@ import tensorflow_hub as hub
 
 import hub_urls
 import create_model
+import create_bottlenecks_tfrecord
 
 def prepare_dir_tree():
     
@@ -57,16 +58,20 @@ def image_metadata():
 
 def main():
     prepare_dir_tree()
-    image_metadata()
-    '''
+    
+    CLASS_LABELS = image_metadata()
     feature_extractor =  hub_urls.get_hub_model(FLAGS.architecture)
+
+    create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(CLASS_LABELS, feature_extractor)
+
+    '''
     module_layer = hub.KerasLayer('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4', trainable = True)
     module_image_size = tuple(
         module_layer._func.__call__
         .concrete_functions[0].structured_input_signature[0][0].shape)
 
-    print(module_image_size)'''
-    '''
+    print(module_image_size)
+
     if FLAGS.custom_classifier:
         model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
             '1_conv2d': {'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu'},
@@ -83,10 +88,7 @@ def main():
             '1_dense': {'units': 10, 'activation': 'softmax'}
         })
 
-    print(model.get_summary().summary())
-
-    #create_bottleneck_vectors(model)
-'''
+    print(model.get_summary().summary())'''
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description = 'Transfer Learning Parameters')
