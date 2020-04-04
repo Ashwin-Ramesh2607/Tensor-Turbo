@@ -62,7 +62,7 @@ def main():
     CLASS_LABELS = image_metadata()
     feature_extractor =  hub_urls.get_hub_model(FLAGS.architecture)
 
-    create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(CLASS_LABELS, feature_extractor)
+    create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, CLASS_LABELS, feature_extractor)
 
     '''
     module_layer = hub.KerasLayer('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4', trainable = True)

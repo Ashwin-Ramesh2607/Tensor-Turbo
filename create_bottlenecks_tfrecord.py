@@ -45,11 +45,9 @@ def create_train_example(bottleneck_vector, class_label):
 	train_example = tf.train.Example(features = tf.train.Features(feature = feature))
 	return train_example
 
-def create_bottlenecks_tfrecord():
-    image_path_DS = tf.data.Dataset.list_files('local/tf_files/images/*/*', shuffle = True)
-    CLASS_LABELS = np.array(['chocolate_cake', 'dumplings', 'french_fries', 'hamburger', 'macarons', 'onion_rings', 'pho', 'pizza', 'samosa', 'sushi'])
+def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor):
 
-    feature_extractor =  hub.load('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4')
+    image_path_DS = tf.data.Dataset.list_files(image_dir + '/*/*', shuffle = True)
     bottleneck_DS = image_path_DS.map(create_bottlenecks_vectors, num_parallel_calls =  tf.data.experimental.AUTOTUNE)
 
     record_file = 'images.tfrecords'
