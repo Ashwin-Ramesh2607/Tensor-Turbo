@@ -3,13 +3,12 @@ import os
 import sys
 import hashlib
 import argparse
+import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 
 import hub_urls
 import create_model
-
-MAX_NUM_IMAGES_PER_CLASS = 2 ** 27 - 1
 
 def prepare_dir_tree():
     
@@ -22,13 +21,12 @@ def prepare_dir_tree():
         tf.io.gfile.rmtree(FLAGS.summaries_dir)
     tf.io.gfile.mkdir(FLAGS.summaries_dir)
 
-def create_image_splits():
+def image_metadata():
     if not tf.io.gfile.exists(FLAGS.image_dir):
-        print(f'Image Dataset could not be found at: {FLAGS.image_dir}')
-        return None
+        sys.exit(f'Image Dataset could not be found at: {FLAGS.image_dir}')
 
+    labels_metadata = {}
     image_extensions = ['.jpg', '.jpeg', '.png', '.bmp']
-    dataset_splits = {}
 
     class_dirs = [
         os.path.join(FLAGS.image_dir, class_label)
@@ -39,54 +37,35 @@ def create_image_splits():
         if tf.io.gfile.isdir(class_label))
 
     for class_dir in class_dirs:
-        image_list = [
+        image_count = len([
             image_name for image_name in tf.io.gfile.listdir(class_dir)
-            if os.path.splitext(image_name)[1].lower() in image_extensions]
+            if os.path.splitext(image_name)[1].lower() in image_extensions])
 
-        training_images = []
-        validation_images = []
-        testing_images = []
+        labels_metadata[os.path.basename(class_dir)] = image_count
 
-        if not image_list:
-            print(f'No Images found under label: {class_dir}')
+    for label, image_count in labels_metadata.items():
+        print(f'{label} contains {image_count} images.')
 
-        for image_file in image_list:
-            image_name = os.path.splitext(image_file)[0]
-            hash_name = re.sub(r'_nohash_.*$', '', image_name)
-            hash_name_hashed = hashlib.sha512(tf.compat.as_bytes(hash_name)).hexdigest()
-            percentage_hash = ((int(hash_name_hashed, 16) %
-                               (MAX_NUM_IMAGES_PER_CLASS + 1)) *
-                               (100.0 / MAX_NUM_IMAGES_PER_CLASS))
+    if 0 in labels_metadata.values():
+        sys.exit('Ensure that no label has 0 images. \nEither remove the folder or add images.')
 
-            if percentage_hash < FLAGS.validation_percentage:
-                validation_images.append(image_file)
-            elif percentage_hash < (FLAGS.testing_percentage + FLAGS.validation_percentage):
-                testing_images.append(image_file)
-            else:
-                training_images.append(image_file)
+    class_labels = np.array([
+        os.path.basename(class_label)
+        for class_label in class_dirs])
 
-        dataset_splits[os.path.basename(class_dir)] = {
-            'directory': class_dir,
-            'train': training_images,
-            'validation': validation_images,
-            'test': testing_images
-        }
+    return class_labels
 
-    return dataset_splits
-
-#def create_bottleneck_vectors(feature_extractor):
-    
 def main():
     prepare_dir_tree()
-    create_image_splits()
-    
+    image_metadata()
+    '''
     feature_extractor =  hub_urls.get_hub_model(FLAGS.architecture)
     module_layer = hub.KerasLayer('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4', trainable = True)
     module_image_size = tuple(
         module_layer._func.__call__
         .concrete_functions[0].structured_input_signature[0][0].shape)
 
-    print(module_image_size)
+    print(module_image_size)'''
     '''
     if FLAGS.custom_classifier:
         model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
