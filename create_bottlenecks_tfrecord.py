@@ -67,3 +67,5 @@ def create_bottlenecks_tfrecord(image_dir, CLASS_LABEL_LIST, feature_extractor_m
     end = time.time()
     print('Time to create tfrecord:', end - start)
 
+create_bottlenecks_tfrecord()
+
