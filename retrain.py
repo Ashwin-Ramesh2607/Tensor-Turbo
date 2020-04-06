@@ -11,8 +11,9 @@ import hub_urls
 import create_model
 import create_bottlenecks_tfrecord
 
+
 def prepare_dir_tree():
-    
+
     if not tf.io.gfile.exists(FLAGS.bottleneck_dir):
         tf.io.gfile.mkdir(FLAGS.bottleneck_dir)
     elif not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture)):
@@ -21,6 +22,7 @@ def prepare_dir_tree():
     if tf.io.gfile.exists(FLAGS.summaries_dir):
         tf.io.gfile.rmtree(FLAGS.summaries_dir)
     tf.io.gfile.mkdir(FLAGS.summaries_dir)
+
 
 def image_metadata():
     if not tf.io.gfile.exists(FLAGS.image_dir):
@@ -56,11 +58,12 @@ def image_metadata():
 
     return class_labels
 
+
 def main():
     prepare_dir_tree()
-    
+
     CLASS_LABELS = image_metadata()
-    feature_extractor =  hub_urls.get_hub_model(FLAGS.architecture)
+    feature_extractor = hub_urls.get_hub_model(FLAGS.architecture)
 
     create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, CLASS_LABELS, feature_extractor)
 
@@ -90,14 +93,15 @@ def main():
 
     print(model.get_summary().summary())'''
 
+
 def parse_arguments():
-    parser = argparse.ArgumentParser(description = 'Transfer Learning Parameters')
-    
+    parser = argparse.ArgumentParser(description='Transfer Learning Parameters')
+
     parser.add_argument(
         '--architecture',
-        type = str,
-        default = '',
-        help = '''
+        type=str,
+        default='',
+        help='''
             Specify the architecture to use as a Feature Extractor.
             A classifier head will be added which uses the Feature Vector to classify images.
             The pre-trained feature extractor will be downloaded from TensorFlow Hub.'''
@@ -105,89 +109,90 @@ def parse_arguments():
 
     parser.add_argument(
         '--custom_classifier',
-        action = 'store_true',
-        help = '''\
+        action='store_true',
+        help='''\
             Include this flag if you want to specify a custom classifier head.
             If this flag is not set, only a dense layer (with number of nodes = number of image classes)
-            as a default classifier on top of the tf-hub feature extractor model.''' 
+            as a default classifier on top of the tf-hub feature extractor model.'''
     )
 
     parser.add_argument(
         '--image_dir',
-        type = str,
-        default = '',
-        help = '''
+        type=str,
+        default='',
+        help='''
             Path to the folders containing images.
             Train, Validation and Test splits will be automatically made using Hashing Function.'''
     )
 
     parser.add_argument(
         '--bottleneck_dir',
-        type = str,
-        default = 'bottlenecks',
-        help = '''
-            Directory to store csv files containing bottleneck values for each image.'''     
+        type=str,
+        default='bottlenecks',
+        help='''
+            Directory to store csv files containing bottleneck values for each image.'''
     )
 
     parser.add_argument(
         '--validation_percentage',
-        type = int,
-        default = 15,
-        help = '''
+        type=int,
+        default=15,
+        help='''
             Percentage of images to reserve for validation.'''
     )
 
     parser.add_argument(
         '--testing_percentage',
-        type = int,
-        default = 15,
-        help = '''
+        type=int,
+        default=15,
+        help='''
             Percentage of images to reserve for testing.'''
     )
 
     parser.add_argument(
         '--train_batch_size',
-        type = int,
-        default = 128,
-        help = '''\
+        type=int,
+        default=128,
+        help='''\
             Number of training images to be used in one batch while training.'''
     )
 
     parser.add_argument(
         '--epochs',
-        type = int,
-        default = 20,
-        help = '''
+        type=int,
+        default=20,
+        help='''
             Number of Epochs to train before stopping.'''
     )
 
     parser.add_argument(
         '--learning_rate',
-        type = float,
-        default = 0.01,
-        help = '''
+        type=float,
+        default=0.01,
+        help='''
             Learning Rate to use during Training.'''
     )
 
     parser.add_argument(
         '--summaries_dir',
-        type = str,
-        default = 'logs',
-        help = '''
+        type=str,
+        default='logs',
+        help='''
             Directory to store summaries for TensorBoard visualizations.'''
     )
-    
+
     parser.add_argument(
         '--saved_model',
-        type = str,
-        default = 'saved_models',
-        help = '''
+        type=str,
+        default='saved_models',
+        help='''
             Path to store Saved Model in TensorFlow 2 Format.'''
     )
 
     return parser.parse_args()
 
+
 if __name__ == '__main__':
-    
+
     FLAGS = parse_arguments()
     main()
