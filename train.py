@@ -53,7 +53,7 @@ def train():
         for x, y in bottleneck_train_DS:
             loss_value, gradients = calculate_gradients(model, x, y)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-            
+
             train_loss_avg(loss_value)
             train_accuracy(y, model(x, training=True))
 
