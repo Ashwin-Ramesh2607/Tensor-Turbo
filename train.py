@@ -2,7 +2,7 @@ import time
 import tensorflow as tf
 
 
-def convert_to_tensors(train_example):
+def convert_to_tensors(train_example, image_feature_description):
     bottleneck_label_pair = tf.io.parse_single_example(train_example, image_feature_description)
     bottleneck_vector = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['bottleneck_vector'], out_type=tf.float32), (1280, ))
     class_label = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['label'], out_type=tf.uint8), (10, ))
@@ -24,13 +24,14 @@ def train():
 
     bottleneck_tfrecord_DS = tf.data.TFRecordDataset('bottlenecks/testing.tfrecords')
 
-    global image_feature_description
     image_feature_description = {
         'bottleneck_vector': tf.io.FixedLenFeature([], tf.string),
         'label': tf.io.FixedLenFeature([], tf.string)
     }
 
-    bottleneck_whole_DS = bottleneck_tfrecord_DS.map(convert_to_tensors, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    bottleneck_whole_DS = bottleneck_tfrecord_DS.map(
+        lambda train_example: convert_to_tensors(train_example, image_feature_description),
+        num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     bottleneck_train_DS = bottleneck_whole_DS.take(7000)
     bottleneck_test_DS = bottleneck_whole_DS.skip(7000)
