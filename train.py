@@ -5,7 +5,7 @@ import tensorflow as tf
 def convert_to_tensors(train_example):
     bottleneck_label_pair = tf.io.parse_single_example(train_example, image_feature_description)
     bottleneck_vector = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['bottleneck_vector'], out_type=tf.float32), (1280, ))
-    class_label = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['label'], out_type=tf.uint8), (101, ))
+    class_label = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['label'], out_type=tf.uint8), (10, ))
     return bottleneck_vector, class_label
 
 
@@ -32,10 +32,10 @@ def train():
 
     bottleneck_whole_DS = bottleneck_tfrecord_DS.map(convert_to_tensors, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
-    bottleneck_train_DS = bottleneck_whole_DS.take(70700)
-    bottleneck_test_DS = bottleneck_whole_DS.skip(70700)
-    bottleneck_val_DS = bottleneck_test_DS.skip(15150)
-    bottleneck_test_DS = bottleneck_test_DS.take(15150)
+    bottleneck_train_DS = bottleneck_whole_DS.take(7000)
+    bottleneck_test_DS = bottleneck_whole_DS.skip(7000)
+    bottleneck_val_DS = bottleneck_test_DS.skip(1500)
+    bottleneck_test_DS = bottleneck_test_DS.take(1500)
 
     bottleneck_train_DS = bottleneck_train_DS.batch(64).prefetch(tf.data.experimental.AUTOTUNE)
     bottleneck_val_DS = bottleneck_val_DS.batch(1).prefetch(tf.data.experimental.AUTOTUNE)
@@ -43,7 +43,7 @@ def train():
 
     model = tf.keras.models.Sequential([
         tf.keras.Input(shape=(1280, )),
-        tf.keras.layers.Dense(101, activation='softmax')])
+        tf.keras.layers.Dense(10, activation='softmax')])
 
     optimizer = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
 
@@ -58,8 +58,8 @@ def train():
             loss_value, gradients = calculate_gradients(model, x, y)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-            train_loss_avg(loss_value)
-            train_accuracy(y, model(x, training=True))
+            train_loss_avg.update_state(loss_value)
+            train_accuracy.update_state(y, model(x, training=True))
 
         epoch_end_time = time.time()
 
@@ -69,16 +69,19 @@ def train():
               format(train_loss_avg.result(), train_accuracy.result()))
         print('---------------------------------------------------------')
 
+        train_loss_avg.reset_states()
+        train_accuracy.reset_states()
+
     validation_accuracy = tf.keras.metrics.CategoricalAccuracy()
     test_accuracy = tf.keras.metrics.CategoricalAccuracy()
 
     for x, y in bottleneck_val_DS:
-        validation_accuracy(y, model(x, training=False))
+        validation_accuracy.update_state(y, model(x, training=False))
 
     print("Final Validation Accuracy: {:.3%}".format(validation_accuracy.result()))
 
     for x, y in bottleneck_test_DS:
-        test_accuracy(y, model(x, training=False))
+        test_accuracy.update_state(y, model(x, training=False))
 
     print("Final Test Accuracy: {:.3%}".format(test_accuracy.result()))
 
