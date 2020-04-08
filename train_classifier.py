@@ -2,10 +2,10 @@ import time
 import tensorflow as tf
 
 
-def convert_to_tensors(train_example, image_feature_description):
+def convert_to_tensors(train_example, image_feature_description, bottleneck_shape, total_classes):
     bottleneck_label_pair = tf.io.parse_single_example(train_example, image_feature_description)
-    bottleneck_vector = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['bottleneck_vector'], out_type=tf.float32), (1280, ))
-    class_label = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['label'], out_type=tf.uint8), (10, ))
+    bottleneck_vector = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['bottleneck_vector'], out_type=tf.float32), bottleneck_shape)
+    class_label = tf.ensure_shape(tf.io.parse_tensor(bottleneck_label_pair['label'], out_type=tf.uint8), tf.zeros([total_classes], tf.uint8).shape)
     return bottleneck_vector, class_label
 
 
@@ -20,9 +20,9 @@ def calculate_gradients(model, inputs, targets):
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
-def train():
+def train(tfrecord_path, bottleneck_shape, total_classes, total_images):
 
-    bottleneck_tfrecord_DS = tf.data.TFRecordDataset('bottlenecks/testing.tfrecords')
+    bottleneck_tfrecord_DS = tf.data.TFRecordDataset(tfrecord_path)
 
     image_feature_description = {
         'bottleneck_vector': tf.io.FixedLenFeature([], tf.string),
@@ -30,7 +30,7 @@ def train():
     }
 
     bottleneck_whole_DS = bottleneck_tfrecord_DS.map(
-        lambda train_example: convert_to_tensors(train_example, image_feature_description),
+        lambda train_example: convert_to_tensors(train_example, image_feature_description, bottleneck_shape, total_classes),
         num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     bottleneck_train_DS = bottleneck_whole_DS.take(7000)
@@ -43,8 +43,8 @@ def train():
     bottleneck_test_DS = bottleneck_test_DS.batch(1).prefetch(tf.data.experimental.AUTOTUNE)
 
     model = tf.keras.models.Sequential([
-        tf.keras.Input(shape=(1280, )),
-        tf.keras.layers.Dense(10, activation='softmax')])
+        tf.keras.Input(shape=bottleneck_shape),
+        tf.keras.layers.Dense(total_classes, activation='softmax')])
 
     optimizer = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
 
@@ -85,6 +85,3 @@ def train():
         test_accuracy.update_state(y, model(x, training=False))
 
     print("Final Test Accuracy: {:.3%}".format(test_accuracy.result()))
-
-
-train()

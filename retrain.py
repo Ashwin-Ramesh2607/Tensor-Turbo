@@ -4,11 +4,15 @@ import sys
 import hashlib
 import argparse
 import numpy as np
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 import tensorflow as tf
 import tensorflow_hub as hub
 
 import hub_models
 import create_model
+import train_classifier
 import create_bottlenecks_tfrecord
 
 
@@ -83,7 +87,7 @@ def main():
 
     class_labels, total_classes, total_images = image_metadata()
 
-    input_image_size = hub_models.get_input_image_size(FLAGS.architecture)
+    input_image_size, bottleneck_shape = hub_models.get_model_shapes(FLAGS.architecture)
     feature_extractor = hub_models.get_hub_model(FLAGS.architecture)
 
     expected_tfrecord_name = f'{total_classes}-classes_{total_images}-images.tfrecord'
@@ -99,8 +103,7 @@ def main():
     else:
         print('An existing and compatible TFRecord file has been found')
 
-    print(input_image_size)
-    print(tuple(input_image_size[:2]))
+    train_classifier.train(expected_tfrecord_path, bottleneck_shape, total_classes, total_images)
 
 '''
     if FLAGS.custom_classifier:
