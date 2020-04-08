@@ -1,5 +1,6 @@
 import tensorflow_hub as hub
 
+
 def get_hub_url(architecture):
 
     url_list = {
@@ -8,6 +9,18 @@ def get_hub_url(architecture):
     }
 
     return url_list[architecture]
+
+
+def get_input_image_size(architecture):
+
+    hub_url = get_hub_url(architecture)
+    module_layer = hub.KerasLayer(hub_url, trainable = False)
+    input_image_size = list(
+        module_layer._func.__call__
+        .concrete_functions[0].structured_input_signature[0][0].shape)[-3:]
+
+    return input_image_size
+
 
 def get_hub_model(architecture):
 

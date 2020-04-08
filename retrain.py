@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 
-import hub_urls
+import hub_models
 import create_model
 import create_bottlenecks_tfrecord
 
@@ -82,7 +82,9 @@ def main():
     prepare_dir_tree()
 
     CLASS_LABELS, total_classes, total_images = image_metadata()
-    feature_extractor = hub_urls.get_hub_model(FLAGS.architecture)
+
+    input_image_size = hub_models.get_input_image_size(FLAGS.architecture)
+    feature_extractor = hub_models.get_hub_model(FLAGS.architecture)
 
     expected_tfrecord_name = f'{total_classes}-classes_{total_images}-images.tfrecord'
     expected_tfrecord_path = os.path.join(
@@ -97,14 +99,10 @@ def main():
     else:
         print('An existing and compatible TFRecord file has been found')
 
-    '''
-    module_layer = hub.KerasLayer('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4', trainable = True)
-    module_image_size = tuple(
-        module_layer._func.__call__
-        .concrete_functions[0].structured_input_signature[0][0].shape)
+    print(input_image_size)
+    print(tuple(input_image_size[:2]))
 
-    print(module_image_size)
-
+'''
     if FLAGS.custom_classifier:
         model = create_model.CustomModel(input_dim = (28, 28, 1), num_classes = 10, classifier_head = {
             '1_conv2d': {'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu'},
