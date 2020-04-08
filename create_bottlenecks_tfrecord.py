@@ -59,7 +59,7 @@ def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor, tfre
     image_path_DS = tf.data.Dataset.list_files(image_dir + '/*/*', shuffle=True)
     bottleneck_DS = image_path_DS.map(lambda image_path: create_bottlenecks_vectors(image_path, CLASS_LABELS, feature_extractor), num_parallel_calls=tf.data.experimental.AUTOTUNE)
     end = time.time()
-    print('Time to create bottleneckes:', end - start, 'seconds')
+    print('Time to create bottlenecks:', end - start, 'seconds')
 
     start = time.time()
     total_images = tf.data.experimental.cardinality(bottleneck_DS).numpy()

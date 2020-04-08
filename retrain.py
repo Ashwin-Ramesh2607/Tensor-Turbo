@@ -52,7 +52,7 @@ def image_metadata():
         print(f'{label} contains {image_count} images.')
 
     if 0 in labels_metadata.values():
-        sys.exit('Ensure that no label has 0 images. \n\Either remove the folder or add images.')
+        sys.exit('Ensure that no label has 0 images. \nEither remove the folder or add images.')
 
     class_labels = np.array([
         os.path.basename(class_label)
