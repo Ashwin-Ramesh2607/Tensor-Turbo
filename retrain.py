@@ -16,8 +16,10 @@ def prepare_dir_tree():
 
     if not tf.io.gfile.exists(FLAGS.bottleneck_dir):
         tf.io.gfile.mkdir(FLAGS.bottleneck_dir)
-    elif not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture)):
-        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, FLAGS.architecture))
+    if not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir))):
+        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir)))
+    if not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir), FLAGS.architecture)):
+        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir), FLAGS.architecture))
 
     if tf.io.gfile.exists(FLAGS.summaries_dir):
         tf.io.gfile.rmtree(FLAGS.summaries_dir)
@@ -50,22 +52,50 @@ def image_metadata():
         print(f'{label} contains {image_count} images.')
 
     if 0 in labels_metadata.values():
-        sys.exit('Ensure that no label has 0 images. \nEither remove the folder or add images.')
+        sys.exit('Ensure that no label has 0 images. \n\Either remove the folder or add images.')
 
     class_labels = np.array([
         os.path.basename(class_label)
         for class_label in class_dirs])
 
-    return class_labels
+    total_classes = len(class_labels)
+    total_images = sum(labels_metadata.values())
+
+    return class_labels, total_classes, total_images
+
+
+def check_existing_tfrecord(total_classes, total_images):
+    expected_tfrecord_name = f'{total_classes}-classes_{total_images}-images.tfrecord'
+    expected_tfrecord_path = os.path.join(
+        FLAGS.bottleneck_dir,
+        os.path.basename(FLAGS.image_dir),
+        FLAGS.architecture,
+        expected_tfrecord_name
+        )
+
+    tfrecord_exists = tf.io.gfile.exists(expected_tfrecord_path)
+
+    return tfrecord_exists
 
 
 def main():
     prepare_dir_tree()
 
-    CLASS_LABELS = image_metadata()
+    CLASS_LABELS, total_classes, total_images = image_metadata()
     feature_extractor = hub_urls.get_hub_model(FLAGS.architecture)
 
-    create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, CLASS_LABELS, feature_extractor)
+    expected_tfrecord_name = f'{total_classes}-classes_{total_images}-images.tfrecord'
+    expected_tfrecord_path = os.path.join(
+        FLAGS.bottleneck_dir,
+        os.path.basename(FLAGS.image_dir),
+        FLAGS.architecture,
+        expected_tfrecord_name
+        )
+
+    if not check_existing_tfrecord(total_classes, total_images):
+        create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, CLASS_LABELS, feature_extractor, expected_tfrecord_path)
+    else:
+        print('An existing and compatible TFRecord file has been found')
 
     '''
     module_layer = hub.KerasLayer('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/4', trainable = True)

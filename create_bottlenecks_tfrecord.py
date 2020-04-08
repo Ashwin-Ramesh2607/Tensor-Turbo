@@ -53,7 +53,7 @@ def create_train_example(bottleneck_vector, class_label):
     return train_example
 
 
-def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor):
+def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor, tfrecord_path):
 
     start = time.time()
     image_path_DS = tf.data.Dataset.list_files(image_dir + '/*/*', shuffle=True)
@@ -62,11 +62,10 @@ def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor):
     print('Time to create bottleneckes:', end - start, 'seconds')
 
     start = time.time()
-    record_file = 'bottlenecks/testing.tfrecords'
     total_images = tf.data.experimental.cardinality(bottleneck_DS).numpy()
     image_count = 1
 
-    with tf.io.TFRecordWriter(record_file) as writer:
+    with tf.io.TFRecordWriter(tfrecord_path) as writer:
         for bottleneck_vector, class_label in bottleneck_DS:
             train_example = create_train_example(bottleneck_vector, class_label)
             writer.write(train_example.SerializeToString())
