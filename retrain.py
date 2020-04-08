@@ -81,7 +81,7 @@ def check_existing_tfrecord(total_classes, total_images):
 def main():
     prepare_dir_tree()
 
-    CLASS_LABELS, total_classes, total_images = image_metadata()
+    class_labels, total_classes, total_images = image_metadata()
 
     input_image_size = hub_models.get_input_image_size(FLAGS.architecture)
     feature_extractor = hub_models.get_hub_model(FLAGS.architecture)
@@ -95,7 +95,7 @@ def main():
         )
 
     if not check_existing_tfrecord(total_classes, total_images):
-        create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, CLASS_LABELS, feature_extractor, expected_tfrecord_path)
+        create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, class_labels, input_image_size, feature_extractor, expected_tfrecord_path)
     else:
         print('An existing and compatible TFRecord file has been found')
 

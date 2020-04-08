@@ -5,18 +5,18 @@ import tensorflow as tf
 import tensorflow_hub as hub
 
 
-def get_class_label(image_path, CLASS_LABELS):
+def get_class_label(image_path, class_labels):
     class_label = tf.strings.split(image_path, os.path.sep)
-    boolean_encoded = class_label[-2] == CLASS_LABELS
+    boolean_encoded = class_label[-2] == class_labels
     one_hot_encoded = tf.dtypes.cast(boolean_encoded, tf.uint8)
     return one_hot_encoded
 
 
-def decode_image(image):
+def decode_image(image, input_image_size):
     image = tf.io.decode_image(image, channels=3, dtype=tf.float32, expand_animations=False)
-    image = tf.image.resize(image, [224, 224], method=tf.image.ResizeMethod.BICUBIC, antialias=True)
+    image = tf.image.resize(image, input_image_size[:2], method=tf.image.ResizeMethod.BICUBIC, antialias=True)
     image = tf.clip_by_value(image, clip_value_min=0., clip_value_max=1.)
-    image = tf.ensure_shape(image, (224, 224, 3))
+    image = tf.ensure_shape(image, tuple(input_image_size))
     return image
 
 
@@ -26,10 +26,10 @@ def forward_pass(image, feature_extractor):
     return bottlenecks[0]
 
 
-def create_bottlenecks_vectors(image_path, CLASS_LABELS, feature_extractor):
-    class_label = get_class_label(image_path, CLASS_LABELS)
+def create_bottlenecks_vectors(image_path, class_labels, input_image_size, feature_extractor):
+    class_label = get_class_label(image_path, class_labels)
     image = tf.io.read_file(image_path)
-    image = decode_image(image)
+    image = decode_image(image, input_image_size)
     bottlenecks = forward_pass(image, feature_extractor)
 
     bottlenecks = tf.io.serialize_tensor(bottlenecks)
@@ -53,11 +53,11 @@ def create_train_example(bottleneck_vector, class_label):
     return train_example
 
 
-def create_bottlenecks_tfrecord(image_dir, CLASS_LABELS, feature_extractor, tfrecord_path):
+def create_bottlenecks_tfrecord(image_dir, class_labels, input_image_size, feature_extractor, tfrecord_path):
 
     start = time.time()
     image_path_DS = tf.data.Dataset.list_files(image_dir + '/*/*', shuffle=True)
-    bottleneck_DS = image_path_DS.map(lambda image_path: create_bottlenecks_vectors(image_path, CLASS_LABELS, feature_extractor), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    bottleneck_DS = image_path_DS.map(lambda image_path: create_bottlenecks_vectors(image_path, class_labels, input_image_size, feature_extractor), num_parallel_calls=tf.data.experimental.AUTOTUNE)
     end = time.time()
     print('Time to create bottlenecks:', end - start, 'seconds')
 
