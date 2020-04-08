@@ -99,11 +99,21 @@ def main():
         )
 
     if not check_existing_tfrecord(total_classes, total_images):
-        create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(FLAGS.image_dir, class_labels, input_image_size, feature_extractor, expected_tfrecord_path)
+        create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(
+            FLAGS.image_dir,
+            class_labels,
+            input_image_size,
+            feature_extractor,
+            expected_tfrecord_path)
     else:
-        print('An existing and compatible TFRecord file has been found')
+        print('An existing and compatible TFRecord file has been found which will be used for training.')
 
-    train_classifier.train(expected_tfrecord_path, bottleneck_shape, total_classes, total_images)
+    train_classifier.train(
+        expected_tfrecord_path,
+        bottleneck_shape,
+        total_classes,
+        total_images,
+        FLAGS)
 
 '''
     if FLAGS.custom_classifier:
@@ -183,7 +193,7 @@ def parse_arguments():
     parser.add_argument(
         '--train_batch_size',
         type=int,
-        default=128,
+        default=64,
         help='''\
             Number of training images to be used in one batch while training.'''
     )
@@ -191,7 +201,7 @@ def parse_arguments():
     parser.add_argument(
         '--epochs',
         type=int,
-        default=20,
+        default=50,
         help='''
             Number of Epochs to train before stopping.'''
     )
@@ -199,7 +209,7 @@ def parse_arguments():
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.01,
+        default=0.001,
         help='''
             Learning Rate to use during Training.'''
     )

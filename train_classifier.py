@@ -20,7 +20,7 @@ def calculate_gradients(model, inputs, targets):
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
-def train(tfrecord_path, bottleneck_shape, total_classes, total_images):
+def train(tfrecord_path, bottleneck_shape, total_classes, total_images, FLAGS):
 
     bottleneck_tfrecord_DS = tf.data.TFRecordDataset(tfrecord_path)
 
@@ -33,12 +33,15 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images):
         lambda train_example: convert_to_tensors(train_example, image_feature_description, bottleneck_shape, total_classes),
         num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
-    bottleneck_train_DS = bottleneck_whole_DS.take(7000)
-    bottleneck_test_DS = bottleneck_whole_DS.skip(7000)
-    bottleneck_val_DS = bottleneck_test_DS.skip(1500)
-    bottleneck_test_DS = bottleneck_test_DS.take(1500)
+    train_samples = int(((100 - (FLAGS.validation_percentage + FLAGS.testing_percentage)) * total_images) / 100.)
+    test_samples = int((FLAGS.testing_percentage * total_images) / 100.)
 
-    bottleneck_train_DS = bottleneck_train_DS.batch(64).prefetch(tf.data.experimental.AUTOTUNE)
+    bottleneck_train_DS = bottleneck_whole_DS.take(train_samples)
+    bottleneck_test_DS = bottleneck_whole_DS.skip(train_samples)
+    bottleneck_val_DS = bottleneck_test_DS.skip(test_samples)
+    bottleneck_test_DS = bottleneck_test_DS.take(test_samples)
+
+    bottleneck_train_DS = bottleneck_train_DS.batch(FLAGS.train_batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     bottleneck_val_DS = bottleneck_val_DS.batch(1).prefetch(tf.data.experimental.AUTOTUNE)
     bottleneck_test_DS = bottleneck_test_DS.batch(1).prefetch(tf.data.experimental.AUTOTUNE)
 
@@ -46,11 +49,9 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images):
         tf.keras.Input(shape=bottleneck_shape),
         tf.keras.layers.Dense(total_classes, activation='softmax')])
 
-    optimizer = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
+    optimizer = tf.keras.optimizers.SGD(lr=FLAGS.learning_rate, momentum=0.9)
 
-    num_epochs = 50
-
-    for epoch in range(num_epochs):
+    for epoch in range(FLAGS.epochs):
         train_loss_avg = tf.keras.metrics.Mean()
         train_accuracy = tf.keras.metrics.CategoricalAccuracy()
         epoch_start_time = time.time()
@@ -64,10 +65,8 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images):
 
         epoch_end_time = time.time()
 
-        print("Epoch {:03d}: Time Taken: {:.3f} s".
-              format(epoch + 1, epoch_end_time - epoch_start_time))
-        print("Training Loss: {:.3f}, Training Accuracy: {:.3%}".
-              format(train_loss_avg.result(), train_accuracy.result()))
+        print(f'Epoch {epoch + 1:03d}: {epoch_end_time - epoch_start_time:.3f} seconds')
+        print(f'Training Loss: {train_loss_avg.result():.3f}, Training Accuracy: {train_accuracy.result():.3%}')
         print('---------------------------------------------------------')
 
         train_loss_avg.reset_states()
@@ -79,9 +78,9 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images):
     for x, y in bottleneck_val_DS:
         validation_accuracy.update_state(y, model(x, training=False))
 
-    print("Final Validation Accuracy: {:.3%}".format(validation_accuracy.result()))
+    print(f'Final Validation Accuracy: {validation_accuracy.result():.3%}')
 
     for x, y in bottleneck_test_DS:
         test_accuracy.update_state(y, model(x, training=False))
 
-    print("Final Test Accuracy: {:.3%}".format(test_accuracy.result()))
+    print(f'Final Test Accuracy: {test_accuracy.result():.3%}')
