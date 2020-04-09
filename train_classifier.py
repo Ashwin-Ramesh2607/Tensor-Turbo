@@ -78,12 +78,12 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images, FLAGS):
         epoch_end_time = time.time()
 
         with train_summary_writer.as_default():
-            tf.summary.scalar('train loss', train_loss_avg.result(), step=epoch)
-            tf.summary.scalar('train accuarcy', train_accuracy.result(), step=epoch)
+            tf.summary.scalar('Loss', train_loss_avg.result(), step=epoch)
+            tf.summary.scalar('Accuracy', train_accuracy.result(), step=epoch)
 
         with validation_summary_writer.as_default():
-            tf.summary.scalar('validation loss', validation_loss_avg.result(), step = epoch)
-            tf.summary.scalar('validation accuracy', validation_accuracy.result(), step=epoch)
+            tf.summary.scalar('Loss', validation_loss_avg.result(), step=epoch)
+            tf.summary.scalar('Accuracy', validation_accuracy.result(), step=epoch)
 
         print(f'Epoch {epoch:03d}: {epoch_end_time - epoch_start_time:.3f} seconds')
         print(f'Train Loss: {train_loss_avg.result():.3f}, Train Accuracy: {train_accuracy.result():.3%}')
@@ -95,13 +95,7 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images, FLAGS):
         validation_loss_avg.reset_states()
         validation_accuracy.reset_states()
 
-    validation_accuracy = tf.keras.metrics.CategoricalAccuracy()
     test_accuracy = tf.keras.metrics.CategoricalAccuracy()
-
-    for x, y in bottleneck_val_DS:
-        validation_accuracy.update_state(y, model(x, training=False))
-
-    print(f'Final Validation Accuracy: {validation_accuracy.result():.3%}')
 
     for x, y in bottleneck_test_DS:
         test_accuracy.update_state(y, model(x, training=False))
