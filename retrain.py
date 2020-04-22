@@ -20,10 +20,19 @@ def prepare_dir_tree():
 
     if not tf.io.gfile.exists(FLAGS.bottleneck_dir):
         tf.io.gfile.mkdir(FLAGS.bottleneck_dir)
-    if not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir))):
-        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir)))
-    if not tf.io.gfile.exists(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir), FLAGS.architecture)):
-        tf.io.gfile.mkdir(os.path.join(FLAGS.bottleneck_dir, os.path.basename(FLAGS.image_dir), FLAGS.architecture))
+    if not tf.io.gfile.exists(
+            os.path.join(FLAGS.bottleneck_dir, os.path.basename(
+                FLAGS.image_dir))):
+        tf.io.gfile.mkdir(
+            os.path.join(FLAGS.bottleneck_dir,
+                         os.path.basename(FLAGS.image_dir)))
+    if not tf.io.gfile.exists(
+            os.path.join(FLAGS.bottleneck_dir, os.path.basename(
+                FLAGS.image_dir), FLAGS.architecture)):
+        tf.io.gfile.mkdir(
+            os.path.join(FLAGS.bottleneck_dir,
+                         os.path.basename(FLAGS.image_dir),
+                         FLAGS.architecture))
 
     if tf.io.gfile.exists(FLAGS.summaries_dir):
         tf.io.gfile.rmtree(FLAGS.summaries_dir)
@@ -39,16 +48,17 @@ def image_metadata():
 
     class_dirs = [
         os.path.join(FLAGS.image_dir, class_label)
-        for class_label in tf.io.gfile.listdir(FLAGS.image_dir)]
+        for class_label in tf.io.gfile.listdir(FLAGS.image_dir)
+    ]
 
-    class_dirs = sorted(
-        class_label for class_label in class_dirs
-        if tf.io.gfile.isdir(class_label))
+    class_dirs = sorted(class_label for class_label in class_dirs
+                        if tf.io.gfile.isdir(class_label))
 
     for class_dir in class_dirs:
         image_count = len([
             image_name for image_name in tf.io.gfile.listdir(class_dir)
-            if os.path.splitext(image_name)[1].lower() in image_extensions])
+            if os.path.splitext(image_name)[1].lower() in image_extensions
+        ])
 
         labels_metadata[os.path.basename(class_dir)] = image_count
 
@@ -56,11 +66,12 @@ def image_metadata():
         print(f'{label} contains {image_count} images.')
 
     if 0 in labels_metadata.values():
-        sys.exit('Ensure that no label has 0 images. \nEither remove the folder or add images.')
+        sys.exit(
+            'Ensure that no label has 0 images. \nEither remove the folder or add images.'
+        )
 
-    class_labels = np.array([
-        os.path.basename(class_label)
-        for class_label in class_dirs])
+    class_labels = np.array(
+        [os.path.basename(class_label) for class_label in class_dirs])
 
     total_classes = len(class_labels)
     total_images = sum(labels_metadata.values())
@@ -70,12 +81,10 @@ def image_metadata():
 
 def check_existing_tfrecord(total_classes, total_images):
     expected_tfrecord_name = f'{total_classes}-classes_{total_images}-images.tfrecord'
-    expected_tfrecord_path = os.path.join(
-        FLAGS.bottleneck_dir,
-        os.path.basename(FLAGS.image_dir),
-        FLAGS.architecture,
-        expected_tfrecord_name
-        )
+    expected_tfrecord_path = os.path.join(FLAGS.bottleneck_dir,
+                                          os.path.basename(FLAGS.image_dir),
+                                          FLAGS.architecture,
+                                          expected_tfrecord_name)
 
     tfrecord_exists = tf.io.gfile.exists(expected_tfrecord_path)
 
@@ -87,33 +96,28 @@ def main():
 
     class_labels, total_classes, total_images = image_metadata()
 
-    input_image_size, bottleneck_shape = hub_models.get_model_shapes(FLAGS.architecture)
+    input_image_size, bottleneck_shape = hub_models.get_model_shapes(
+        FLAGS.architecture)
     feature_extractor = hub_models.get_hub_model(FLAGS.architecture)
 
     expected_tfrecord_name = f'{total_classes}-classes_{total_images}-images.tfrecord'
-    expected_tfrecord_path = os.path.join(
-        FLAGS.bottleneck_dir,
-        os.path.basename(FLAGS.image_dir),
-        FLAGS.architecture,
-        expected_tfrecord_name
-        )
+    expected_tfrecord_path = os.path.join(FLAGS.bottleneck_dir,
+                                          os.path.basename(FLAGS.image_dir),
+                                          FLAGS.architecture,
+                                          expected_tfrecord_name)
 
     if not check_existing_tfrecord(total_classes, total_images):
         create_bottlenecks_tfrecord.create_bottlenecks_tfrecord(
-            FLAGS.image_dir,
-            class_labels,
-            input_image_size,
-            feature_extractor,
+            FLAGS.image_dir, class_labels, input_image_size, feature_extractor,
             expected_tfrecord_path)
     else:
-        print('An existing and compatible TFRecord file has been found which will be used for training.')
+        print(
+            'An existing and compatible TFRecord file has been found which will be used for training.'
+        )
 
-    train_classifier.train(
-        expected_tfrecord_path,
-        bottleneck_shape,
-        total_classes,
-        total_images,
-        FLAGS)
+    train_classifier.train(expected_tfrecord_path, bottleneck_shape,
+                           total_classes, total_images, FLAGS)
+
 
 '''
     if FLAGS.custom_classifier:
@@ -136,99 +140,83 @@ def main():
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Transfer Learning Parameters')
+    parser = argparse.ArgumentParser(
+        description='Transfer Learning Parameters')
 
-    parser.add_argument(
-        '--architecture',
-        type=str,
-        default='',
-        help='''
+    parser.add_argument('--architecture',
+                        type=str,
+                        default='',
+                        help='''
             Specify the architecture to use as a Feature Extractor.
             A classifier head will be added which uses the Feature Vector to classify images.
             The pre-trained feature extractor will be downloaded from TensorFlow Hub.'''
-    )
+                        )
 
-    parser.add_argument(
-        '--custom_classifier',
-        action='store_true',
-        help='''\
+    parser.add_argument('--custom_classifier',
+                        action='store_true',
+                        help='''\
             Include this flag if you want to specify a custom classifier head.
             If this flag is not set, only a dense layer (with number of nodes = number of image classes)
             as a default classifier on top of the tf-hub feature extractor model.'''
-    )
+                        )
 
-    parser.add_argument(
-        '--image_dir',
-        type=str,
-        default='',
-        help='''
+    parser.add_argument('--image_dir',
+                        type=str,
+                        default='',
+                        help='''
             Path to the folders containing images.
             Train, Validation and Test splits will be automatically made using Hashing Function.'''
-    )
+                        )
 
-    parser.add_argument(
-        '--bottleneck_dir',
-        type=str,
-        default='bottlenecks',
-        help='''
+    parser.add_argument('--bottleneck_dir',
+                        type=str,
+                        default='bottlenecks',
+                        help='''
             Directory to store csv files containing bottleneck values for each image.'''
-    )
+                        )
 
-    parser.add_argument(
-        '--validation_percentage',
-        type=int,
-        default=15,
-        help='''
-            Percentage of images to reserve for validation.'''
-    )
+    parser.add_argument('--validation_percentage',
+                        type=int,
+                        default=15,
+                        help='''
+            Percentage of images to reserve for validation.''')
 
-    parser.add_argument(
-        '--testing_percentage',
-        type=int,
-        default=15,
-        help='''
-            Percentage of images to reserve for testing.'''
-    )
+    parser.add_argument('--testing_percentage',
+                        type=int,
+                        default=15,
+                        help='''
+            Percentage of images to reserve for testing.''')
 
-    parser.add_argument(
-        '--train_batch_size',
-        type=int,
-        default=64,
-        help='''\
+    parser.add_argument('--train_batch_size',
+                        type=int,
+                        default=64,
+                        help='''\
             Number of training images to be used in one batch while training.'''
-    )
+                        )
 
-    parser.add_argument(
-        '--epochs',
-        type=int,
-        default=50,
-        help='''
-            Number of Epochs to train before stopping.'''
-    )
+    parser.add_argument('--epochs',
+                        type=int,
+                        default=50,
+                        help='''
+            Number of Epochs to train before stopping.''')
 
-    parser.add_argument(
-        '--learning_rate',
-        type=float,
-        default=0.001,
-        help='''
-            Learning Rate to use during Training.'''
-    )
+    parser.add_argument('--learning_rate',
+                        type=float,
+                        default=0.001,
+                        help='''
+            Learning Rate to use during Training.''')
 
-    parser.add_argument(
-        '--summaries_dir',
-        type=str,
-        default='logs',
-        help='''
-            Directory to store summaries for TensorBoard visualizations.'''
-    )
+    parser.add_argument('--summaries_dir',
+                        type=str,
+                        default='logs',
+                        help='''
+            Directory to store summaries for TensorBoard visualizations.''')
 
-    parser.add_argument(
-        '--saved_model',
-        type=str,
-        default='saved_models',
-        help='''
-            Path to store Saved Model in TensorFlow 2 Format.'''
-    )
+    parser.add_argument('--saved_model',
+                        type=str,
+                        default='saved_models',
+                        help='''
+            Path to store Saved Model in TensorFlow 2 Format.''')
 
     return parser.parse_args()
 
