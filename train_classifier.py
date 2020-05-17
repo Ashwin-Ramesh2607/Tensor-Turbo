@@ -1,5 +1,6 @@
 import os
 import time
+
 import tensorflow as tf
 
 
@@ -73,6 +74,7 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images, FLAGS):
     optimizer = tf.keras.optimizers.SGD(lr=FLAGS.learning_rate, momentum=0.9)
 
     for epoch in range(1, FLAGS.epochs + 1):
+        
         train_loss_avg = tf.keras.metrics.Mean()
         validation_loss_avg = tf.keras.metrics.Mean()
         train_accuracy = tf.keras.metrics.CategoricalAccuracy()
@@ -105,18 +107,10 @@ def train(tfrecord_path, bottleneck_shape, total_classes, total_images, FLAGS):
                               validation_accuracy.result(),
                               step=epoch)
 
-        print(
-            f'Epoch {epoch:03d}: {epoch_end_time - epoch_start_time:.3f} seconds'
-        )
-        print(
-            f'Train Loss: {train_loss_avg.result():.3f}, Train Accuracy: {train_accuracy.result():.3%}'
-        )
-        print(
-            f'Validation Loss: {validation_loss_avg.result():.3f}, Validation Accuracy: {validation_accuracy.result():.3%}'
-        )
-        print(
-            '---------------------------------------------------------------------'
-        )
+        print(f'Epoch {epoch:03d}: {epoch_end_time - epoch_start_time:.3f} seconds')
+        print(f'Train Loss: {train_loss_avg.result():.3f}, Train Accuracy: {train_accuracy.result():.3%}')
+        print(f'Validation Loss: {validation_loss_avg.result():.3f}, Validation Accuracy: {validation_accuracy.result():.3%}')
+        print('---------------------------------------------------------------------')
 
         train_loss_avg.reset_states()
         train_accuracy.reset_states()
