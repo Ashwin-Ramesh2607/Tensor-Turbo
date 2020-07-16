@@ -1,72 +1,31 @@
 # Tensor-Turbo
-CPU based ultra-fast Image Classifier based on TF 2 and TF Hub for Transfer Learning
+####CPU based ultra-fast Image Classifier based on TF 2 and TF Hub for Transfer Learning
 
-# Project Overview
-TensorTurbo is an Image Classification project aimed at training large scale datasets on CPU systems. It uses 
+## Project Overview
+TensorTurbo is an Image Classification project aimed at training large scale datasets on CPU systems. This is a more efficient implementation of transfer learning. The high level steps of implementation include :
+1. Compute bottleneck values - resultant feature vectors from a forward pass of an image
+2. Create a TFRecord file based on bottleneck vectors and the groundtruths
+3. Use multi-processing to parallelize data-preprocessing (sub-1 second to process over 10,000 images)
+4. Train using tf.GradientTape and tf.data objects 
 
-## Getting Started
+### Installation
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
-### Prerequisites
-
-What things you need to install the software and how to install them
-
+This project works on TensorFlow 2 only. Clone this repository
 ```
-Give examples
-```
-
-### Installing
-
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
-
-```
-Give the example
+https://github.com/Ashwin-Ramesh2607/Tensor-Turbo.git
+cd Tensor-Turbo
 ```
 
-And repeat
-
+Install all packages and dependencies 
 ```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
+pip3 install -r requirements.txt
 ```
 
-### And coding style tests
+### Benchmarking
 
-Explain what these tests test and why
+The drastic speed-up can be noticed even when shifting the training to CPU.
 
-```
-Give an example
-```
-
-
-## Authors
-
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+method|latency per epoch
+-|-
+standard tf.keras|150 seconds (Google Colab **GPU**)
+Tensor Turbo|1.1 seconds (Google Colab **CPU**)

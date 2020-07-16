@@ -22,7 +22,6 @@ def calculate_loss(model, x, y, training):
     return tf.keras.losses.CategoricalCrossentropy(from_logits=True)(y_true=y,
                                                                      y_pred=y_)
 
-
 def calculate_gradients(model, inputs, targets):
     with tf.GradientTape() as tape:
         loss_value = calculate_loss(model, inputs, targets, training=True)
